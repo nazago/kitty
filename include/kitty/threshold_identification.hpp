@@ -17,8 +17,7 @@ namespace kitty {
         std::vector<int64_t> linear_form(variables_num + 1);
 	std::vector<bool> complemented_vars(variables_num);
 	TT TF_TruthTable = tt;
-	std::vector<cube> On_set_vector = isop(TF_TruthTable);
-       std::vector<cube> Off_set_vector = isop(unary_not(TF_TruthTable));
+	
 	
 
 	for (uint8_t i = 0u; i < variables_num; i++)
@@ -56,7 +55,8 @@ namespace kitty {
 
         ///////////ILP solver///////////
         
-        
+        std::vector<cube> On_set_vector = isop(TF_TruthTable);
+       std::vector<cube> Off_set_vector = isop(unary_not(TF_TruthTable));
         
         lprec* lp;
         int *colno = NULL;
