@@ -1,76 +1,177 @@
-/* kitty: C++ truth table library
- * Copyright (C) 2017-2020  EPFL
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/*!
-  \file threshold_identification.hpp
-  \brief Threshold logic function identification
-
-  \author CS-472 2020 Fall students
-*/
-
 #pragma once
-
+#include <iostream>
+#include "isop.hpp"
+#include "cube.hpp"
+#include "constructors.hpp"
+#include "dynamic_truth_table.hpp"
+#include "static_truth_table.hpp"
 #include <vector>
-// #include <lpsolve/lp_lib.h> /* uncomment this line to include lp_solve */
+#include <lpsolve/lp_lib.h> /* uncomment this line to include lp_solve */
 #include "traits.hpp"
 
-namespace kitty
-{
+namespace kitty {
 
-/*! \brief Threshold logic function identification
 
-  Given a truth table, this function determines whether it is a threshold logic function (TF)
-  and finds a linear form if it is. A Boolean function is a TF if it can be expressed as
+    template<typename TT, typename = std::enable_if_t<is_complete_truth_table<TT>::value>>
+    bool is_threshold(const TT& tt, std::vector<int64_t>* plf = nullptr)
+    {
+        auto variables_num = tt.num_vars();
+        std::vector<int64_t> linear_form(variables_num + 1);
+	std::vector<bool> complemented_vars(variables_num);
+	TT TF_TruthTable = tt;
+	std::vector<cube> On_set_vector = isop(TF_TruthTable);
+        std::vector<cube> Off_set_vector = isop(unary_not(TF_TruthTable));
+	
 
-  f(x_1, ..., x_n) = \sum_{i=1}^n w_i x_i >= T
+	for (auto i = 0u; i < variables_num; i++)
+	{
+	uint8_t flag_n, flag_p =0;
+	auto f0 = cofactor0(TF_TruthTable, i);
+	auto f1 = cofactor1(TF_TruthTable, i);
 
-  where w_i are the weight values and T is the threshold value.
-  The linear form of a TF is the vector [w_1, ..., w_n; T].
+	if (implies(f1,f0))
+	{
+	flag_n = 1;
+	}
+	else if (implies(f0,f1))
+	{
+	flag_p = 1;
+	} 
+	else
+	{
+	return false;
+	} 
+	
 
-  \param tt The truth table
-  \param plf Pointer to a vector that will hold a linear form of `tt` if it is a TF.
-             The linear form has `tt.num_vars()` weight values and the threshold value
-             in the end.
-  \return `true` if `tt` is a TF; `false` if `tt` is a non-TF.
-*/
-template<typename TT, typename = std::enable_if_t<is_complete_truth_table<TT>::value>>
-bool is_threshold( const TT& tt, std::vector<int64_t>* plf = nullptr )
-{
-  std::vector<int64_t> linear_form;
+	if (flag_n == 1)
+	{
+	flip_inplace( TF_TruthTable, i );
+	complemented_vars.at(i) = true;
+	}   
+	if (flag_p == 1)
+	{
+	complemented_vars.at(i) = false;
+	}  
 
-  /* TODO */
-  /* if tt is non-TF: */
-  return false;
+	} 
 
-  /* if tt is TF: */
-  /* push the weight and threshold values into `linear_form` */
-  if ( plf )
-  {
-    *plf = linear_form;
-  }
-  return true;
-}
+        ///////////ILP solver///////////
+        
+        
+        
+        lprec* lp;
+        int *colno = NULL;
+        REAL *row = NULL;
+        lp = make_lp(0, variables_num + 1);
+       
+        colno = (int *) malloc((variables_num + 1) * sizeof(*colno));
+        row = (REAL *) malloc((variables_num + 1) * sizeof(*row));
+        if((colno == NULL) || (row == NULL))
+        return false;
+        set_add_rowmode(lp, TRUE); 
 
-} /* namespace kitty */
+        
+        
+        for (auto& ccube : On_set_vector) { 
+
+            for (uint8_t k = 0; k < variables_num; k++) { 
+                auto ccube_without_literal = ccube;
+                ccube_without_literal.remove_literal(k);
+
+               
+                if (ccube.num_literals() != ccube_without_literal.num_literals()) {
+                   
+                    colno[k] = k + 1;
+                    row[k] = 1;
+                }
+                else {
+                    
+                    colno[k] = k + 1;
+                    row[k] = 0;
+                }
+            }
+            colno[variables_num] = variables_num + 1; 
+            row[variables_num] = -1;            
+            add_constraintex(lp, variables_num + 1, row, colno, GE, 0);
+        }
+
+       
+        
+        for (auto& ccube : Off_set_vector) { 
+
+            for (uint8_t k = 0; k < variables_num; k++) {
+
+                auto ccube_without_literal = ccube;
+                ccube_without_literal.remove_literal(k);
+
+                
+                if (ccube.num_literals() == ccube_without_literal.num_literals()) {
+                    
+                    colno[k] = k + 1;
+                    row[k] = 1;
+                }
+                else {
+                    
+                    colno[k] = k + 1;
+                    row[k] = 0;
+                }
+            }
+            colno[variables_num] = variables_num + 1; 
+            row[variables_num] = -1;            
+            add_constraintex(lp, variables_num + 1, row, colno, LE, -1);
+        }
+
+        
+       
+
+        set_add_rowmode(lp, FALSE); 
+
+        
+        for (uint8_t k = 0; k < variables_num + 1; k++) {
+            colno[k] = k + 1;
+            row[k] = 1;
+        }
+        set_obj_fnex(lp, variables_num + 1, row, colno);
+
+        
+        set_verbose(lp, IMPORTANT);
+        set_minim(lp);
+        int result = solve(lp);
+        get_variables(lp, row);
+
+        
+        for(uint8_t k = 0; k < variables_num; k++) 
+        {
+        if(complemented_vars[k])
+        {
+        linear_form[k] = -row[k];
+        row[variables_num] = row[variables_num] - row[k];
+        }
+        else
+        {
+        linear_form[k] = row[k];
+        row[variables_num] = row[variables_num];
+        }
+        }
+        linear_form[variables_num] = (row[variables_num]);
+
+        
+        if(row != NULL)
+            free(row);
+        if(colno != NULL)
+            free(colno);
+        if(lp != NULL) 
+            delete_lp(lp);
+
+        
+        if(result == 0) {
+            if(plf)
+                *plf = linear_form;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    }
+    
