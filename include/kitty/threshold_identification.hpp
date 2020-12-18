@@ -24,8 +24,8 @@ namespace kitty {
 	for (uint8_t i = 0u; i < variables_num; i++)
 	{
 	uint8_t flag_n, flag_p =0;
-	auto f0 = cofactor0(TF_TruthTable, i);
-	auto f1 = cofactor1(TF_TruthTable, i);
+	TT f0 = cofactor0(TF_TruthTable, i);
+	TT f1 = cofactor1(TF_TruthTable, i);
 
 
 	if (implies(f1,f0))
