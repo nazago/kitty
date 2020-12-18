@@ -9,8 +9,8 @@
 #include <lpsolve/lp_lib.h> /* uncomment this line to include lp_solve */
 #include "traits.hpp"
 
-namespace kitty {
-
+namespace kitty 
+{
 
     template<typename TT, typename = std::enable_if_t<is_complete_truth_table<TT>::value>>
     bool is_threshold(const TT& tt, std::vector<int64_t>* plf = nullptr)
