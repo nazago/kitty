@@ -1,10 +1,8 @@
 #pragma once
+
 #include <iostream>
 #include "isop.hpp"
 #include "cube.hpp"
-#include "constructors.hpp"
-#include "dynamic_truth_table.hpp"
-#include "static_truth_table.hpp"
 #include <vector>
 #include <lpsolve/lp_lib.h> /* uncomment this line to include lp_solve */
 #include "traits.hpp"
@@ -15,12 +13,12 @@ namespace kitty {
     template<typename TT, typename = std::enable_if_t<is_complete_truth_table<TT>::value>>
     bool is_threshold(const TT& tt, std::vector<int64_t>* plf = nullptr)
     {
-        auto variables_num = tt.num_vars();
+        uint8_t variables_num = tt.num_vars();
         std::vector<int64_t> linear_form(variables_num + 1);
 	std::vector<bool> complemented_vars(variables_num);
 	TT TF_TruthTable = tt;
 	std::vector<cube> On_set_vector = isop(TF_TruthTable);
-        std::vector<cube> Off_set_vector = isop(unary_not(TF_TruthTable));
+       std::vector<cube> Off_set_vector = isop(unary_not(TF_TruthTable));
 	
 
 	for (uint8_t i = 0u; i < variables_num; i++)
@@ -64,9 +62,11 @@ namespace kitty {
         int *colno = NULL;
         REAL *row = NULL;
         lp = make_lp(0, variables_num + 1);
-        for (int w = 1; w <= (int) variables_num + 1; w++) { 
+        for (uint8_t w = 1; w <= variables_num + 1; w++) 
+        { 
             //Mark all variables as integer numbers
             set_int(lp, w, TRUE);
+         }
        
         colno = (int *) malloc((variables_num + 1) * sizeof(*colno));
         row = (REAL *) malloc((variables_num + 1) * sizeof(*row));
@@ -76,12 +76,12 @@ namespace kitty {
 
         
         
-        for (auto& ccube : On_set_vector) 
+        for (cube ccube : On_set_vector) 
         { 
 
             for (uint8_t k = 0; k < variables_num; k++) 
             { 
-                auto ccube_without_literal = ccube;
+                cube ccube_without_literal = ccube;
                 ccube_without_literal.remove_literal(k);
 
                
@@ -105,13 +105,13 @@ namespace kitty {
 
        
         
-        for (auto& ccube : Off_set_vector) 
+        for (cube ccube : Off_set_vector) 
         { 
 
             for (uint8_t m = 0; m < variables_num; m++) 
             {
 
-                auto ccube_without_literal = ccube;
+                cube ccube_without_literal = ccube;
                 ccube_without_literal.remove_literal(m);
 
                 
@@ -168,24 +168,30 @@ namespace kitty {
         }
         linear_form[variables_num] = (row[variables_num]);
 
-        //Free allocated memory
-        if(row != NULL)
-            free(row);
-        if(colno != NULL)
-            free(colno);
-        if(lp != NULL) 
-            delete_lp(lp);
+       
+     /* free allocated memory */
+  if(row != NULL)
+    free(row);
+  if(colno != NULL)
+    free(colno);
 
-        
-        if(result == 0) {
-            if(plf)
+  if(lp != NULL) {
+    /* clean up such that all used memory by lpsolve is freed */
+    delete_lp(lp);
+  }
+
+ if(result == 0) {
+           
                 *plf = linear_form;
             return true;
         }
-        else {
+        else
+         {
             return false;
         }
+}
+
     }
-    }
-    }
+    
+
     
