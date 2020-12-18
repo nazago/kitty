@@ -21,11 +21,11 @@ namespace kitty {
         std::vector<cube> Off_set_vector = isop(unary_not(TF_TruthTable));
 	
 
-	for (uint64_t i = 0u; i < tt.num_vars(); i++)
+	for (uint8_t i = 0u; i < tt.num_vars(); i++)
 	{
 	uint64_t flag_n, flag_p =0;
-	auto f0 = cofactor0(TF_TruthTable, i);
-	auto f1 = cofactor1(TF_TruthTable, i);
+	TT f0 = cofactor0(TF_TruthTable, i);
+	TT f1 = cofactor1(TF_TruthTable, i);
 
 
 	if (implies(f1,f0))
@@ -77,7 +77,7 @@ namespace kitty {
         for (auto& ccube : On_set_vector) 
         { 
 
-            for (uint64_t k = 0; k < tt.num_vars(); k++) 
+            for (uint8_t k = 0; k < tt.num_vars(); k++) 
             { 
                 auto ccube_without_literal = ccube;
                 ccube_without_literal.remove_literal(k);
@@ -161,7 +161,6 @@ namespace kitty {
         else
         {
         linear_form[p] = row[p];
-        row[tt.num_vars()] = row[tt.num_vars()];
         }
         }
         linear_form[tt.num_vars()] = (row[tt.num_vars()]);
