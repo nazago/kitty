@@ -1,5 +1,4 @@
 #pragma once
-
 #include <iostream>
 #include "isop.hpp"
 #include "cube.hpp"
