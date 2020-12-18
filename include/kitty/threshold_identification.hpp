@@ -62,16 +62,10 @@ namespace kitty {
         int *colno = NULL;
         REAL *row = NULL;
         lp = make_lp(0, variables_num + 1);
-        for (uint8_t w = 1; w <= variables_num + 1; w++) 
-        { 
-            //Mark all variables as integer numbers
-            set_int(lp, w, TRUE);
-         }
        
         colno = (int *) malloc((variables_num + 1) * sizeof(*colno));
         row = (REAL *) malloc((variables_num + 1) * sizeof(*row));
-        if((colno == NULL) || (row == NULL))
-        return false;
+        
         set_add_rowmode(lp, TRUE); 
 
         
@@ -180,18 +174,14 @@ namespace kitty {
     delete_lp(lp);
   }
 
- if(result == 0) {
-           
+if(result == 0) {
+            if(plf)
                 *plf = linear_form;
             return true;
         }
-        else
-         {
+        else {
             return false;
         }
 }
 
     }
-    
-
-    
