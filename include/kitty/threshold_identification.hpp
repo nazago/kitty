@@ -8,8 +8,9 @@
 #include <vector>
 #include <lpsolve/lp_lib.h> /* uncomment this line to include lp_solve */
 #include "traits.hpp"
-namespace kitty 
-{
+
+namespace kitty {
+
 
     template<typename TT, typename = std::enable_if_t<is_complete_truth_table<TT>::value>>
     bool is_threshold(const TT& tt, std::vector<int64_t>* plf = nullptr)
@@ -22,11 +23,12 @@ namespace kitty
         std::vector<cube> Off_set_vector = isop(unary_not(TF_TruthTable));
 	
 
-	for (auto i = 0u; i < variables_num; i++)
+	for (uint8_t i = 0u; i < variables_num; i++)
 	{
 	uint8_t flag_n, flag_p =0;
 	auto f0 = cofactor0(TF_TruthTable, i);
 	auto f1 = cofactor1(TF_TruthTable, i);
+
 
 	if (implies(f1,f0))
 	{
@@ -62,6 +64,9 @@ namespace kitty
         int *colno = NULL;
         REAL *row = NULL;
         lp = make_lp(0, variables_num + 1);
+        for (int w = 1; w <= (int) variables_num + 1; w++) { 
+            //Mark all variables as integer numbers
+            set_int(lp, w, TRUE);
        
         colno = (int *) malloc((variables_num + 1) * sizeof(*colno));
         row = (REAL *) malloc((variables_num + 1) * sizeof(*row));
@@ -71,19 +76,23 @@ namespace kitty
 
         
         
-        for (auto& ccube : On_set_vector) { 
+        for (auto& ccube : On_set_vector) 
+        { 
 
-            for (uint8_t k = 0; k < variables_num; k++) { 
+            for (uint8_t k = 0; k < variables_num; k++) 
+            { 
                 auto ccube_without_literal = ccube;
                 ccube_without_literal.remove_literal(k);
 
                
-                if (ccube.num_literals() != ccube_without_literal.num_literals()) {
+                if (ccube.num_literals() != ccube_without_literal.num_literals())
+                 {
                    
                     colno[k] = k + 1;
                     row[k] = 1;
-                }
-                else {
+                 }
+                else 
+                {
                     
                     colno[k] = k + 1;
                     row[k] = 0;
@@ -96,23 +105,27 @@ namespace kitty
 
        
         
-        for (auto& ccube : Off_set_vector) { 
+        for (auto& ccube : Off_set_vector) 
+        { 
 
-            for (uint8_t k = 0; k < variables_num; k++) {
+            for (uint8_t m = 0; m < variables_num; m++) 
+            {
 
                 auto ccube_without_literal = ccube;
-                ccube_without_literal.remove_literal(k);
+                ccube_without_literal.remove_literal(m);
 
                 
-                if (ccube.num_literals() == ccube_without_literal.num_literals()) {
+                if (ccube.num_literals() == ccube_without_literal.num_literals()) 
+                {
                     
-                    colno[k] = k + 1;
-                    row[k] = 1;
+                    colno[m] = m + 1;
+                    row[m] = 1;
                 }
-                else {
+                else 
+                {
                     
-                    colno[k] = k + 1;
-                    row[k] = 0;
+                    colno[m] = m + 1;
+                    row[m] = 0;
                 }
             }
             colno[variables_num] = variables_num + 1; 
@@ -126,9 +139,10 @@ namespace kitty
         set_add_rowmode(lp, FALSE); 
 
         
-        for (uint8_t k = 0; k < variables_num + 1; k++) {
-            colno[k] = k + 1;
-            row[k] = 1;
+        for (uint8_t l = 0; l < variables_num + 1; l++) 
+        {
+            colno[l] = l + 1;
+            row[l] = 1;
         }
         set_obj_fnex(lp, variables_num + 1, row, colno);
 
@@ -139,22 +153,22 @@ namespace kitty
         get_variables(lp, row);
 
         
-        for(uint8_t k = 0; k < variables_num; k++) 
+        for(uint8_t p = 0; p < variables_num; p++) 
         {
-        if(complemented_vars[k])
+        if(complemented_vars[p])
         {
-        linear_form[k] = -row[k];
-        row[variables_num] = row[variables_num] - row[k];
+        linear_form[p] = -row[p];
+        row[variables_num] = row[variables_num] - row[p];
         }
         else
         {
-        linear_form[k] = row[k];
+        linear_form[p] = row[p];
         row[variables_num] = row[variables_num];
         }
         }
         linear_form[variables_num] = (row[variables_num]);
 
-        
+        //Free allocated memory
         if(row != NULL)
             free(row);
         if(colno != NULL)
@@ -171,6 +185,7 @@ namespace kitty
         else {
             return false;
         }
+    }
     }
     }
     
