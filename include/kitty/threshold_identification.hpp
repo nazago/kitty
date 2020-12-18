@@ -8,7 +8,6 @@
 #include <vector>
 #include <lpsolve/lp_lib.h> /* uncomment this line to include lp_solve */
 #include "traits.hpp"
-
 namespace kitty 
 {
 
