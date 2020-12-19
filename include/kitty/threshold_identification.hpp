@@ -39,10 +39,7 @@ bool is_threshold(const TT& tt, std::vector<int64_t>* plf = nullptr)
         lp = make_lp(0, tt.num_vars() + 1);
         
         
-        for ( uint64_t i = 1; i < tt.num_vars() + 1; i++) { 
-         
-            set_int(lp, i, TRUE);
-        }
+       
         
         
         colno = (int *) malloc((tt.num_vars() + 1) * sizeof(*colno));
@@ -110,13 +107,7 @@ bool is_threshold(const TT& tt, std::vector<int64_t>* plf = nullptr)
         set_add_rowmode(lp, FALSE); 
      	
      	
-     	for (uint8_t i = 0; i < tt.num_vars() + 1; i++) {
-            
-                colno[i] = i + 1;
-                row[i] = 1;
-            
-            add_constraintex(lp, 1, row, colno, GE, 0);
-        }
+     
         
         for (uint8_t h = 0; h < tt.num_vars() + 1; h++) {
             colno[h] = h + 1;
