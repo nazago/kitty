@@ -17,14 +17,14 @@ bool is_threshold(const TT& tt, std::vector<int64_t>* plf = nullptr)
         std::vector<bool> inverted(tt.num_vars(), false);    
         auto ttstar = tt;    
         
-        for (uint8_t var = 0; var < tt.num_vars(); var++) {
+        for (uint8_t d = 0; d < tt.num_vars(); d++) {
         
-         	  auto neg = cofactor0(tt, var);
-		  auto pos = cofactor1(tt, var);
+         	  auto neg = cofactor0(tt, d);
+		  auto pos = cofactor1(tt, d);
 	
             if ( implies(pos, neg ) ) {
-                flip_inplace(ttstar, var);
-                inverted.at(var) = true; 
+                flip_inplace(ttstar, d);
+                inverted.at(d) = true; 
             }
             else if  ( !implies(neg, pos) ) {
 
@@ -34,7 +34,7 @@ bool is_threshold(const TT& tt, std::vector<int64_t>* plf = nullptr)
 
     
         lprec* lp;
-        int *colno = NULL;
+        int *colno = NULL; 
         REAL *row = NULL;
         lp = make_lp(0, tt.num_vars() + 1);
         
@@ -49,30 +49,30 @@ bool is_threshold(const TT& tt, std::vector<int64_t>* plf = nullptr)
         row = (REAL *) malloc((tt.num_vars() + 1) * sizeof(*row));
 
 
-	std::vector<cube> onset_isop = isop(ttstar);
-        std::vector<cube> offset_isop = isop(unary_not(ttstar));
+	auto ON_set = isop(ttstar);
+        auto OFF_set = isop(unary_not(ttstar));
         
         
         set_add_rowmode(lp, TRUE); 
 
         
         
-        for (cube cube : onset_isop) { 
+        for (cube cube : ON_set) { 
 
-            for (uint8_t var = 0; var < tt.num_vars(); var++) { 
+            for (uint8_t p = 0; p < tt.num_vars(); p++) { 
 
-                auto cube_without_literal = cube;
-                cube_without_literal.remove_literal(var);
+                auto no_literal_cube = cube;
+                no_literal_cube.remove_literal(p);
+		bool term = cube.num_literals() != no_literal_cube.num_literals();
 
-
-                if (cube.num_literals() != cube_without_literal.num_literals()) {
+                if (term) {
               
-                    colno[var] = var + 1;
-                    row[var] = 1;
+                    colno[p] = p + 1;
+                    row[p] = 1;
                 }
                 else {
-                    colno[var] = var + 1;
-                    row[var] = 0;
+                    colno[p] = p + 1;
+                    row[p] = 0;
                 }
             }
             colno[tt.num_vars()] = tt.num_vars() + 1; 
@@ -82,23 +82,23 @@ bool is_threshold(const TT& tt, std::vector<int64_t>* plf = nullptr)
 
 
  
-        for (auto& cube : offset_isop) { 
+        for (auto& cube : OFF_set) { 
 
-            for (uint8_t var = 0; var < tt.num_vars(); var++) { 
+            for (uint8_t w = 0; w < tt.num_vars(); w++) { 
 
-                auto cube_without_literal = cube;
-                cube_without_literal.remove_literal(var);
+                auto no_literal_cube = cube;
+                no_literal_cube.remove_literal(w);
+		bool term = cube.num_literals() == no_literal_cube.num_literals();
 
-
-                if (cube.num_literals() == cube_without_literal.num_literals()) {
+                if (term) {
           
-                    colno[var] = var + 1;
-                    row[var] = 1;
+                    colno[w] = w + 1;
+                    row[w] = 1;
                 }
                 else {
      
-                    colno[var] = var + 1;
-                    row[var] = 0;
+                    colno[w] = w + 1;
+                    row[w] = 0;
                 }
             }
             colno[tt.num_vars()] = tt.num_vars() + 1; 
@@ -107,22 +107,22 @@ bool is_threshold(const TT& tt, std::vector<int64_t>* plf = nullptr)
         }
 
 
-      
-
         set_add_rowmode(lp, FALSE); 
-     
-        for (uint8_t var = 0; var < tt.num_vars() + 1; var++) {
-            colno[var] = var + 1;
-            row[var] = 1;
+     	
+     	
+     	for (uint8_t i = 0; i < tt.num_vars() + 1; i++) {
+            
+                colno[i] = i + 1;
+                row[i] = 1;
+            
+            add_constraintex(lp, 1, row, colno, GE, 0);
         }
         
-          for (uint8_t i = 0; i < tt.num_vars() + 1; i++) {
-            for (uint8_t j = 0; j < tt.num_vars() + 1; j++) {
-                colno[j] = j + 1;
-                row[j] = (i == j) ? 1 : 0;
-            }
-            add_constraintex(lp, tt.num_vars() + 1, row, colno, GE, 0);
+        for (uint8_t h = 0; h < tt.num_vars() + 1; h++) {
+            colno[h] = h + 1;
+            row[h] = 1;
         }
+          
         set_obj_fnex(lp, tt.num_vars() + 1, row, colno);
 
         set_verbose(lp, IMPORTANT);
@@ -131,9 +131,16 @@ bool is_threshold(const TT& tt, std::vector<int64_t>* plf = nullptr)
         get_variables(lp, row);
 
      
-        for(uint8_t var = 0; var < tt.num_vars(); var++) {
-            linear_form[var] = (inverted[var]) ? -row[var] : row[var];
-            row[tt.num_vars()] = (inverted[var]) ? row[tt.num_vars()] - row[var] : row[tt.num_vars()];
+        for(uint8_t u = 0; u < tt.num_vars(); u++) {
+        	if (inverted[u]){
+        		linear_form[u] = -row[u];
+        		row[tt.num_vars()] = row[tt.num_vars()] -row[u];
+        	}else{
+        		linear_form[u] = row[u];
+        		
+        	}
+            
+            
         }
         linear_form[tt.num_vars()] = (row[tt.num_vars()]);
 
